@@ -9,6 +9,8 @@ protected:
 	bool SlowDown;
 
 	int state;
+    
+    bool decayed;
 	double statetime;
 
 public:
@@ -26,10 +28,12 @@ public:
 	float GetSpeedZ() { return mSpeed.z; }
 
 	int GetState() { return state; }
+    
+    bool GetDecayed() {return decayed;}
 
 	void RandMovement();
 
-	bool SetSlowDown(bool SlowDown) { SphereObject::SlowDown = SlowDown; }
+	void SetSlowDown(bool SlowDown) { SphereObject::SlowDown = SlowDown; }
 
 	void AddSpeedX(float xspeed) { SphereObject::mSpeed.x += xspeed; }
 	void AddSpeedY(float yspeed) { SphereObject::mSpeed.y += yspeed; }
@@ -38,9 +42,11 @@ public:
 	void SpeedReset() { SphereObject::mSpeed = Vec3f::zero(); }
 
 	void Select() { SphereObject::selected = true; SpeedReset(); }
+    
+    void SetDecayed(bool decayed) {SphereObject::decayed = decayed;}
 
 	void SetState(int state) { SphereObject::state = state; SphereObject::age = 0.0; }
 
-	void Update(double elapsed, vector <SphereObject *> *objects, Vec3f camerapoint);
+	void Update(double elapsed, vector <SphereObject *> *objects, Vec3f camerapoint, ProgramSettings settings);
 	void SpeedUpdate(double elapsed);
 };
