@@ -44,10 +44,10 @@ public:
 	bool GetCollidable() { return collidable; }
 	
 	void virtual Render();
-	void virtual Render(vector <gl::Texture *> *textures, gl::GlslProg *shader);
+	void virtual Render(vector <gl::Texture *> *textures, gl::GlslProg *shader, ProgramSettings settings);
 
 	void virtual Update();
-	void virtual Update(double elapsed);
+	void virtual Update(double elapsed, ProgramSettings settings);
 
 	void virtual Destroy();
 
