@@ -17,7 +17,6 @@ void main()
 {	
 	vec4	ambient = vec4(red, green, blue, alpha);
 	vec4	diffuse = vec4(0.9, 0.9, 0.9, alpha);
-	vec4	specular = vec4(1.0, 1.0, 1.0, alpha);
 	float shinyness = shine;
 	
 	vec3 L = normalize(gl_LightSource[0].position.xyz - v);   
@@ -33,9 +32,7 @@ void main()
 	Idiff = clamp(Idiff, 0.0, 1.0);     
 
 	// specular term
-	vec4 Ispec = specular; 
-	Ispec *= pow(max(dot(R,E),0.0), shinyness);
-	Ispec = clamp(Ispec, 0.0, 1.0); 
+	vec4 Ispec = vec4(0.0, 0.0, 0.0, 0.0);
 
 	// final color 
 	gl_FragColor = Iamb + Idiff + Ispec;	
