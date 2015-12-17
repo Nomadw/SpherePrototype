@@ -19,17 +19,18 @@ void SphereCam::mouseDown(const Vec2i &mousePos)
 	mLastAction = ACTION_NONE;
 }
 
-void SphereCam::mouseDrag(const Vec2i &mousePos, bool rightDown, bool middleDown)
+void SphereCam::mouseDrag(const Vec2i &mousePos, bool rightDown, bool controlDown, bool leftDown, bool shiftDown)
 {
 	int action;
-	if (rightDown && !middleDown)
-		action = ACTION_ZOOM;
-	else if (middleDown && !rightDown)
+    if ((leftDown || rightDown) && controlDown)
+        action = ACTION_TUMBLE;
+    else if ((leftDown || rightDown) && shiftDown)
+        action = ACTION_ZOOM;
+	else if (leftDown && !rightDown)
 		action = ACTION_PAN;
-	else if (rightDown && middleDown)
-		action = ACTION_TUMBLE;
-	else
-		return;
+	else if (rightDown && !leftDown)
+        action = ACTION_ZOOM;
+		else return;
 
 	if (action != mLastAction) {
 		mInitialCam = mCurrentCam;
@@ -106,4 +107,12 @@ void SphereCam::wheelZoom(float wheelIncrement)
 	Vec3f newEye = oldTarget - mInitialCam.getViewDirection() * newCOI;
 	mCurrentCam.setEyePoint(newEye);
 	mCurrentCam.setCenterOfInterest(newCOI);
+}
+
+void SphereCam::setPos(Vec3f NewPos)
+{
+    float COI = NewPos.length();
+    mCurrentCam.setEyePoint(NewPos);
+    
+    mCurrentCam.setCenterOfInterest(COI);
 }
