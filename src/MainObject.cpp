@@ -38,7 +38,7 @@ void MainObject::Update()
 	mTransform.setTranslate(mPos);
 }
 
-void MainObject::Update(double elapsed)
+void MainObject::Update(double elapsed, ProgramSettings settings)
 {
 	age += elapsed;
 	mTransform.setToIdentity();
@@ -51,12 +51,12 @@ void MainObject::Destroy()
 	selected = false;
 }
 
-void MainObject::Render(vector <gl::Texture *> *textures, gl::GlslProg *shader)
+void MainObject::Render(vector <gl::Texture *> *textures, gl::GlslProg *shader, ProgramSettings settings)
 {
 if (CheckShow()) //Does not render if object's show = false
 	{
 		textures->at(texturenumber)->bind();
-
+        
 		shader->uniform("tex0", 0);
 		shader->uniform("alpha", alpha);
 		shader->uniform("red", red);
@@ -66,7 +66,16 @@ if (CheckShow()) //Does not render if object's show = false
 		
 		gl::pushModelView();
 		gl::multModelView(mTransform);
-		gl::drawSphere(Vec3f::zero(), size, quality);
+        
+        //If Spheres on, draw textured sphere. If not, set circle size and draw
+        if(settings.drawsphere)
+            gl::drawSphere(Vec3f::zero(), size, quality);
+        else if(size < 1.0f) {
+            gl::drawSolidCircle(Vec2f::zero(), size * 2);
+        }
+        else {
+            gl::drawSolidCircle(Vec2f::zero(), size * 1.25);
+        }
 		gl::popModelView();
 		
 		textures->at(texturenumber)->unbind();
