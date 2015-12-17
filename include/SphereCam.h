@@ -19,12 +19,13 @@ public:
 	SphereCam(const CameraPersp &aInitialCam);
 
 	void mouseDown(const Vec2i &mousePos);
-	void mouseDrag(const Vec2i &mousePos, bool rightDown, bool middleDown);
+	void mouseDrag(const Vec2i &mousePos, bool rightDown, bool controlDown, bool leftDown, bool shiftDown);
 	void wheelZoom(float wheelIncrement);
 
 	Vec3f GetPosition() { return mCurrentCam.getEyePoint(); }
 
 	const CameraPersp& getCamera() const { return mCurrentCam; }
 	void setCurrentCam(const CameraPersp &aCurrentCam) { mCurrentCam = aCurrentCam; }
-
+    
+    void setPos(Vec3f NewPos);
 };
