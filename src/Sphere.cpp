@@ -15,6 +15,7 @@ SphereObject::SphereObject()
 
 	age = 0.0;
 	lifespan = 100.0;
+    decayed = false;
 }
 
 SphereObject::SphereObject(float sred, float sgreen, float sblue, float salpha, float ssize, int stexturenumber)
@@ -30,6 +31,7 @@ SphereObject::SphereObject(float sred, float sgreen, float sblue, float salpha, 
 	size = ssize;
 
 	texturenumber = stexturenumber;
+    decayed = false;
 }
 
 SphereObject::SphereObject(float x, float y, float z)
@@ -49,7 +51,9 @@ SphereObject::SphereObject(float x, float y, float z)
 	mPos.z = z;
 
 	texturenumber = 0;
-
+    
+    decayed = false;
+    
 	state = CREATION_OSCILLATION;
 	lifespan = 50.0;
 }
@@ -71,6 +75,7 @@ SphereObject::SphereObject(float x, float y, float z, int mstate)
 	mPos.x = x;
 	mPos.y = y;
 	mPos.z = z;
+    decayed = false;
 }
 
 SphereObject::SphereObject(float x, float y, float z, float msize, float speedx, float speedy, float speedz)
@@ -95,6 +100,7 @@ SphereObject::SphereObject(float x, float y, float z, float msize, float speedx,
 	mSpeed.x = speedx;
 	mSpeed.y = speedy;
 	mSpeed.z = speedz;
+    decayed = false;
 
 	state = CREATION_FAST;
 	lifespan = 50.0;
@@ -119,21 +125,31 @@ SphereObject::SphereObject(float sred, float sgreen, float sblue, float salpha, 
 	mPos.x = x;
 	mPos.y = y;
 	mPos.z = z;
-
+    
+    decayed = false;
+    
 	mSpeed = Vec3f::zero();
 }
 
-void SphereObject::Update(double elapsed, vector <SphereObject *> *objects, Vec3f camerapoint)
+void SphereObject::Update(double elapsed, vector <SphereObject *> *objects, Vec3f camerapoint, ProgramSettings settings)
 {
 	Vec3f distance = mPos - camerapoint;
 
 	int dist = (int)distance.length();
+    
+    if(dist > settings.MAXRENDERDISTANCE)
+    {
+        SetShow(false); //do not render if too far away
+    } else {
+        SetShow(true); //RENDER IF NOT CALCULATED OR IN RANGE
+    }
 
 	quality = 60 - (dist / 2);
 
 	if (quality <= 6)
 		quality = 6;
 
+    
 	if (GetSelected()) {
 		SetShine(0.0f);
 	}
@@ -147,6 +163,10 @@ void SphereObject::Update(double elapsed, vector <SphereObject *> *objects, Vec3
 		SpeedUpdate(elapsed);
 		mTransform.setToIdentity();
 		mTransform.setTranslate(mPos);
+    green = 0.2f;
+    if(!settings.drawsphere) {                      //IF DRAWING CIRCLES INSTEAD OF SPHERES
+            mTransform.rotate(Vec3f::yAxis(), 45.0f);
+    }
 		//mTransform.createRotation(mRotation);
 
 	/*	if ((mPos.x < -BORDERX) || (mPos.x > BORDERX) || (mPos.y < -BORDERY)
@@ -172,14 +192,27 @@ void SphereObject::Update(double elapsed, vector <SphereObject *> *objects, Vec3
 		}
 		if (alpha > 0.0f) {
 			alpha -= 0.075f *(float)elapsed;
-			if (size > 0.25f) {
+			
 				if (rand() % 350 == 1) {
-					SphereObject *sphere = new SphereObject(mPos.x, mPos.y, mPos.z, size, (rand() % 20 - 10) / 10.0f, (rand() % 20 - 10) / 10.0f, (rand() % 20 - 10) / 10.0f);
-					objects->push_back(sphere);
+					
 				}
-			}
-		}
-		else SetState(DEAD);
+			
+		} else SetState(DEAD);
+        if(alpha <= 0.2f)
+        {
+            if(!decayed) {
+                decayed = true;
+            if (size > 0.25f) {
+            int spawn = 2 + randGaussian();
+            for (int i = 0; i < spawn; i++) {
+                SphereObject *sphere = new SphereObject(mPos.x, mPos.y, mPos.z, size, (rand() % 20 - 10) / 10.0f, (rand() % 20 - 10) / 10.0f, (rand() % 20 - 10) / 10.0f);
+                objects->push_back(sphere);
+            }
+            }
+            }
+        }
+        
+		
 		
 	}
 
@@ -196,12 +229,16 @@ void SphereObject::Update(double elapsed, vector <SphereObject *> *objects, Vec3
 		if (red > 0.2f) {
 			red -= 0.3f *(float)elapsed;
 		}
-		mTransform.rotate(Vec3f::yAxis(), (float)getElapsedSeconds() * 0.3f);
+        if(settings.drawsphere) {
+            mTransform.rotate(Vec3f::yAxis(), ((float)getElapsedSeconds() * 0.3f) * settings.ProgramSpeed);
+        } else { green = 1.0f; }
+       
 		if (age >= lifespan)
 		{
 			SetState(DECAY);
 		}
 	}
+    
 }
 
 void SphereObject::SpeedUpdate(double elapsed)
