@@ -1,4 +1,6 @@
-#version 110
+#version 110 //GLSL 
+
+//Fragment shader
 
 uniform sampler2D tex0;
 
@@ -8,7 +10,7 @@ uniform float red;
 uniform float green;
 uniform float blue;
 
-uniform float shine;
+//uniform float shine;
 
 varying vec3 v;
 varying vec3 N;
@@ -17,7 +19,7 @@ void main()
 {	
 	vec4	ambient = vec4(red, green, blue, alpha);
 	vec4	diffuse = vec4(0.9, 0.9, 0.9, alpha);
-	float shinyness = shine;
+	//float shinyness = shine;
 	
 	vec3 L = normalize(gl_LightSource[0].position.xyz - v);   
 	vec3 E = normalize(-v); 
@@ -32,8 +34,8 @@ void main()
 	Idiff = clamp(Idiff, 0.0, 1.0);     
 
 	// specular term
-	vec4 Ispec = vec4(0.0, 0.0, 0.0, 0.0);
+	//vec4 Ispec = vec4(0.0, 0.0, 0.0, 0.0);
 
 	// final color 
-	gl_FragColor = Iamb + Idiff + Ispec;	
+	gl_FragColor = Iamb + Idiff; //+ Ispec;	
 }
