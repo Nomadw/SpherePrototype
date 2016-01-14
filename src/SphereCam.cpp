@@ -2,16 +2,19 @@
 
 #include "SphereCam.h"
 
+//Base constructor
 SphereCam::SphereCam()
 {
 	mInitialCam = mCurrentCam = CameraPersp();
 }
 
+//Constructor, allowing to isntantly set current CameraPersp (See Cinder's Camera.h)
 SphereCam::SphereCam(const CameraPersp &aInitialCam)
 {
 	mInitialCam = mCurrentCam = aInitialCam;
 }
 
+//Gets mouse position when pressed
 void SphereCam::mouseDown(const Vec2i &mousePos)
 {
 	mInitialMousePos = mousePos;
@@ -19,16 +22,17 @@ void SphereCam::mouseDown(const Vec2i &mousePos)
 	mLastAction = ACTION_NONE;
 }
 
+//Camera movement code - Used when mouse is dragged
 void SphereCam::mouseDrag(const Vec2i &mousePos, bool rightDown, bool controlDown, bool leftDown, bool shiftDown)
 {
 	int action;
-    if ((leftDown || rightDown) && controlDown)
+    if ((leftDown || rightDown) && controlDown) //CTRL + Click to Tumble
         action = ACTION_TUMBLE;
-    else if ((leftDown || rightDown) && shiftDown)
+    else if ((leftDown || rightDown) && shiftDown) //SHIFT + Click to zoom
         action = ACTION_ZOOM;
-	else if (leftDown && !rightDown)
+	else if (leftDown && !rightDown) //Click to pan
 		action = ACTION_PAN;
-	else if (rightDown && !leftDown)
+	else if (rightDown && !leftDown) //Right-click to zoom
         action = ACTION_ZOOM;
 		else return;
 
@@ -76,21 +80,18 @@ void SphereCam::mouseDrag(const Vec2i &mousePos, bool rightDown, bool controlDow
 	}
 }
 
-void SphereCam::wheelZoom(float wheelIncrement)
+//Sets camera position - Used when moving to nearest object of chosen state
+void SphereCam::setPos(Vec3f NewPos)
 {
-	//float action;
+	float COI = NewPos.length();
+	mCurrentCam.setEyePoint(NewPos);
 
-	//action = wheelIncrement;
+	mCurrentCam.setCenterOfInterest(COI);
+}
 
-	//if (action != mLastWheelAction) {
-	//	mInitialCam = mCurrentCam;
-	//	mInitialMouseWheel = wheelIncrement;
-	//}
-
-	//mLastWheelAction = action;
-	//int mouseDelta = (mousePos.x - mInitialMousePos.x) + (mousePos.y - mInitialMousePos.y);
-//	float wheelDelta = wheelIncrement - mInitialMouseWheel;
-
+//Wheel zooming - Partially works in Windows. Left out (commented)
+/*void SphereCam::wheelZoom(float wheelIncrement)
+{
 	bool reverse;
 
 	if (wheelIncrement >= 0.0f)
@@ -99,20 +100,9 @@ void SphereCam::wheelZoom(float wheelIncrement)
 
 	float newCOI;
 
-	//if (reverse)
-	//newCOI = powf(2.71828183f, wheelIncrement / 5.0f) * mInitialCam.getCenterOfInterest();
-	//else
-		newCOI = powf(2.71828183f, -wheelIncrement / 5.0f) * mInitialCam.getCenterOfInterest();
+    newCOI = powf(2.71828183f, -wheelIncrement / 5.0f) * mInitialCam.getCenterOfInterest();
 	Vec3f oldTarget = mInitialCam.getCenterOfInterestPoint();
 	Vec3f newEye = oldTarget - mInitialCam.getViewDirection() * newCOI;
 	mCurrentCam.setEyePoint(newEye);
 	mCurrentCam.setCenterOfInterest(newCOI);
-}
-
-void SphereCam::setPos(Vec3f NewPos)
-{
-    float COI = NewPos.length();
-    mCurrentCam.setEyePoint(NewPos);
-    
-    mCurrentCam.setCenterOfInterest(COI);
-}
+}*/
