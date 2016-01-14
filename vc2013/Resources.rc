@@ -1,0 +1,11 @@
+#include "../include/Resources.h"
+
+1	ICON	"..\\resources\\cinder_app_icon.ico"
+
+RES_SHADER_FRAG
+RES_SHADER_VERT
+RES_TEXTURE_1
+RES_TEXTURE_2
+RES_TEXTURE_3
+
+//INSERT ALL NAMES HERE IF WORKING WITH WINDOWS
