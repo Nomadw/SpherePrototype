@@ -1,4 +1,6 @@
-#version 110
+#version 110 //GLSL
+
+//Vert shader
 
 varying vec3 v;
 varying vec3 N;
