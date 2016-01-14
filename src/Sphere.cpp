@@ -1,11 +1,14 @@
 #include "Globals.h"
 
-#include "MainObject.h"
-#include "Sphere.h"
+#include "MainObject.h" //Inherits from MainObject
+#include "Sphere.h" //Variable and function declarations for object in header
 
+//Definitions for SphereObject functions
+
+//Base constructor for Sphere object
 SphereObject::SphereObject()
 {
-	MainObject::MainObject();
+	MainObject::MainObject(); //Inherits from base MainObject constructor
 
 	SlowDown = true;
 
@@ -15,28 +18,15 @@ SphereObject::SphereObject()
 
 	age = 0.0;
 	lifespan = 100.0;
-    decayed = false;
+	decayed = false;
+
+	SetCollidable(true);
 }
 
-SphereObject::SphereObject(float sred, float sgreen, float sblue, float salpha, float ssize, int stexturenumber)
+//Main constructor class - Creates all starting objects in current application. Only given position
+SphereObject::SphereObject(ProgramSettings settings)
 {
-	SphereObject::SphereObject();
-
-	red = sred;
-	blue = sblue;
-	green = sgreen;
-
-	alpha = salpha;
-
-	size = ssize;
-
-	texturenumber = stexturenumber;
-    decayed = false;
-}
-
-SphereObject::SphereObject(float x, float y, float z)
-{
-	SphereObject::SphereObject();
+	SphereObject::SphereObject(); //Inherits from base SphereObject constructor
 
 	red = 1.0f;
 	blue = 0.2f;
@@ -46,232 +36,218 @@ SphereObject::SphereObject(float x, float y, float z)
 
 	size = 1.00f;
 
-	mPos.x = x;
-	mPos.y = y;
-	mPos.z = z;
+	//Random positon- Within borders
+	mPos.x = (rand() % BORDER - (BORDER / 2)) / 10.0f;
+	mPos.y = (rand() % BORDER - (BORDER / 2)) / 10.0f;
+	mPos.z = (rand() % BORDER - (BORDER / 2)) / 10.0f;
 
 	texturenumber = 0;
-    
-    decayed = false;
-    
+
+	decayed = false;
+
+	//If random chance of 100 is above percentage, set collidable to true (Percentage of collision being set globally by user)
+	if (rand() % 100 > settings.PERCENTCOLLISION) {
+		SetCollidable(true);
+	}
+	else SetCollidable(false);
+
+	//Start in oscillation stage
 	state = CREATION_OSCILLATION;
 	lifespan = 50.0;
 }
 
-SphereObject::SphereObject(float x, float y, float z, int mstate)
+//Used for all decayed object spawning. Takes previous object's position + size
+SphereObject::SphereObject(float x, float y, float z, float msize, ProgramSettings settings)
 {
-	SphereObject::SphereObject();
-
-	state = mstate;
-
-	red = rand() % 10 / 10.0f;
-	blue = rand() % 10 / 10.0f;
-	green = rand() % 10 / 10.0f;
-
-	alpha = rand() % 10 / 10.0f;
-
-	size = rand() % 100 / 100.0f;
-
-	mPos.x = x;
-	mPos.y = y;
-	mPos.z = z;
-    decayed = false;
-}
-
-SphereObject::SphereObject(float x, float y, float z, float msize, float speedx, float speedy, float speedz)
-{
-	SphereObject::SphereObject();
-
+	SphereObject::SphereObject(settings); //Inherits from base SphereObject constructor
+	 
 	red = 1.0f;
 	green = 0.2f;
 	blue = 0.2f;
 
+	//Set positon to position of decayed object
 	mPos.x = x;
 	mPos.y = y;
 	mPos.z = z;
 
-	size = msize / 2;
+	size = msize / 2; //Always half size of decayed object
 
-	if (size > 0.25f)
+	if (size > 0.25f) //Texture used based on size of object
 		texturenumber = 1;
 	else
 		texturenumber = 2;
 
-	mSpeed.x = speedx;
-	mSpeed.y = speedy;
-	mSpeed.z = speedz;
-    decayed = false;
+	//If random chance of 100 is above percentage, set collidable to true (Percentage of collision being set globally by user)
+	if (rand() % 100 > settings.PERCENTCOLLISION) {
+		SetCollidable(true);
+	}
+	else SetCollidable(false);
+
+	//Random speed
+	mSpeed.x = (rand() % 20 - 10) / 10.0f;
+	mSpeed.y = (rand() % 20 - 10) / 10.0f;
+	mSpeed.z = (rand() % 20 - 10) / 10.0f;
+	decayed = false;
 
 	state = CREATION_FAST;
 	lifespan = 50.0;
 }
 
-SphereObject::SphereObject(float sred, float sgreen, float sblue, float salpha, float ssize, int stexturenumber, float x, float y, float z)
-{
-	SphereObject::SphereObject();
-
-	SlowDown = true;
-
-	red = sred;
-	blue = sblue;
-	green = sgreen;
-
-	alpha = salpha;
-
-	size = ssize;
-
-	texturenumber = stexturenumber;
-
-	mPos.x = x;
-	mPos.y = y;
-	mPos.z = z;
-    
-    decayed = false;
-    
-	mSpeed = Vec3f::zero();
-}
-
 void SphereObject::Update(double elapsed, vector <SphereObject *> *objects, Vec3f camerapoint, ProgramSettings settings)
 {
-	Vec3f distance = mPos - camerapoint;
+	Vec3f distance = mPos - camerapoint; //Object's distance from camera calculated
 
 	int dist = (int)distance.length();
-    
-    if(dist > settings.MAXRENDERDISTANCE)
-    {
-        SetShow(false); //do not render if too far away
-    } else {
-        SetShow(true); //RENDER IF NOT CALCULATED OR IN RANGE
-    }
 
-	quality = 60 - (dist / 2);
+	//Updates that are done in any state
 
-	if (quality <= 6)
+	if (dist > settings.MAXRENDERDISTANCE)
+	{
+		SetShow(false); //do not render if too far away (From set draw distance)
+	}
+	else {
+		SetShow(true); //RENDER IF NOT CALCULATED OR IN RANGE
+	}
+
+	quality = 60 - (dist / 2); //Sets quality 
+
+	if (quality <= 6) //Stops object from using too little segments - Becoming less than a 'sphere'!
 		quality = 6;
 
-    
-	if (GetSelected()) {
-		SetShine(0.0f);
-	}
-		else {
-			SetShine(100.0f);
-			RandMovement();
-			age += elapsed;
-		}
+	if (!settings.pause) { //Skip all of this if paused!
 
-		mPos += mSpeed * (float)elapsed;
-		SpeedUpdate(elapsed);
-		mTransform.setToIdentity();
-		mTransform.setTranslate(mPos);
-    green = 0.2f;
-    if(!settings.drawsphere) {                      //IF DRAWING CIRCLES INSTEAD OF SPHERES
-            mTransform.rotate(Vec3f::yAxis(), 45.0f);
-    }
+		//if (GetSelected()) {
+		//	SetShine(0.0f);
+		//}
+		//else {
+		//	SetShine(100.0f);
+		RandMovement(); //Updates movement if object not moving
+		age += elapsed; //Updates age of object - Keeps in time with frame delta / program speed
+		//}
+
+		mPos += mSpeed * (float)elapsed; //Updates position - Adds speed vector to position vector (kept in time with delta / program speed manually set)
+		SpeedUpdate(elapsed); //Updates speed vector
+		mTransform.setToIdentity(); //Sets 4x4 matrix as translation identity 
+		mTransform.setTranslate(mPos); //Plug XYZ position vector into 4x4 translation matrix (Cinder uses 4x4 matrix for world position, XYZ vector is easier to use!)
+		green = 0.2f; //Currently green value is always 0.2, make sure
+		if (!settings.drawsphere) {     //IF DRAWING CIRCLES INSTEAD OF SPHERES
+			//Billboard - Possible update would be to fix to camera position
+			mTransform.rotate(Vec3f::yAxis(), 45.0f);
+		}
 		//mTransform.createRotation(mRotation);
 
-	/*	if ((mPos.x < -BORDERX) || (mPos.x > BORDERX) || (mPos.y < -BORDERY)
-			|| (mPos.y > BORDERY) || (mPos.z < -BORDERZ) || (mPos.z > BORDERZ))
+		/*	if ((mPos.x < -BORDERX) || (mPos.x > BORDERX) || (mPos.y < -BORDERY)
+		|| (mPos.y > BORDERY) || (mPos.z < -BORDERZ) || (mPos.z > BORDERZ))
 		{
-			mSpeed = -mSpeed;
+		mSpeed = -mSpeed;
 		}*/
 
-	if (state == CREATION_FAST) {
-		
-		if (alpha < 1.0f) {
-			alpha += 0.2f *(float)elapsed;
-		}
-		else
-			SetState(NORMAL);
-	}
+		//Updates that are done in specific states - See enumeration of states in globals.h
 
-	else if (state == DECAY) {
-		if (blue < 1.0f) {
-			blue += 0.05f *(float)elapsed;
-			//red -= 0.05f *(float)elapsed;
-			//green -= 0.05f *(float)elapsed;
+		if (state == CREATION_FAST) {
+
+			if (alpha < 1.0f) {
+				alpha += 0.2f *(float)elapsed;
+			}
+			else
+				SetState(NORMAL);
 		}
-		if (alpha > 0.0f) {
-			alpha -= 0.075f *(float)elapsed;
-			
-				if (rand() % 350 == 1) {
-					
+
+		else if (state == DECAY) {
+			if (blue < 1.0f) { //Increase blue value up to max
+				blue += 0.05f *(float)elapsed;
+			}
+			if (alpha > 0.0f) { //Decrease alpha to fade out object
+				alpha -= 0.075f *(float)elapsed;
+
+			}
+			else SetState(DEAD); //Set object to dead (To be deleted from memory) when object has fully faded out
+
+			if (alpha <= 0.2f)
+			{
+				if (!decayed) {
+					decayed = true; //Sets decayed to true - Stops spawning happening more than one per decayed object!
+					if (size > 0.25f) {
+						int spawn = 2 + randGaussian(); // Selects a number based on Gaussian distribution
+						for (int i = 0; i < spawn; i++) {
+							SphereObject *sphere = new SphereObject(mPos.x, mPos.y, mPos.z, size, settings);
+							objects->push_back(sphere);
+						}
+					}
 				}
-			
-		} else SetState(DEAD);
-        if(alpha <= 0.2f)
-        {
-            if(!decayed) {
-                decayed = true;
-            if (size > 0.25f) {
-            int spawn = 2 + randGaussian();
-            for (int i = 0; i < spawn; i++) {
-                SphereObject *sphere = new SphereObject(mPos.x, mPos.y, mPos.z, size, (rand() % 20 - 10) / 10.0f, (rand() % 20 - 10) / 10.0f, (rand() % 20 - 10) / 10.0f);
-                objects->push_back(sphere);
-            }
-            }
-            }
-        }
-        
-		
-		
-	}
-
-	else if (state == CREATION_OSCILLATION) {
-		if (alpha < 1.0f) {
-			alpha = (cosf((float)getElapsedSeconds() * 2.0f) * 0.4f) + (age / 15.0f);
-			if (alpha < 0.1f) { alpha = 0.1f; }
+			}
 		}
-		else
-			SetState(NORMAL);
-	}
 
-	else { // state must be NORMAL
-		if (red > 0.2f) {
-			red -= 0.3f *(float)elapsed;
+		else if (state == CREATION_OSCILLATION) {
+			if (alpha < 1.0f) {
+				alpha = (cosf((float)getElapsedSeconds() * 2.0f) * 0.4f) + (age / 15.0f); //"Pulses" alpha for object, giving illusion of phasing in (Using cosine)
+				if (alpha < 0.1f) { alpha = 0.1f; } //Stops object from going fully invisible during spawn!
+			}
+			else
+				SetState(NORMAL); //Brings object into normal state once alpha is above 1.0
 		}
-        if(settings.drawsphere) {
-            mTransform.rotate(Vec3f::yAxis(), ((float)getElapsedSeconds() * 0.3f) * settings.ProgramSpeed);
-        } else { green = 1.0f; }
-       
-		if (age >= lifespan)
-		{
+
+		else {
+			// state must be NORMAL - Not spawning or decaying, standard lifespan
+
+			if (red > 0.2f) {
+				red -= 0.3f *(float)elapsed; //Brings red value back to normal
+			}
+			if (settings.drawsphere) { //Manually rotates across Y axis
+				mTransform.rotate(Vec3f::yAxis(), ((float)getElapsedSeconds() * 0.3f) * settings.ProgramSpeed);
+			}
+			else { green = 1.0f; } //Makes object appear as green if in 2D mode
+
+			if (age >= lifespan)
+			{
+				SetState(DECAY);
+			}
+		}
+	}
+}
+
+void SphereObject::Collided(SphereObject *otherobject)
+{
+	if (size < otherobject->GetSize()) { //If object is smaller than other object, set to decay (unless already decaying)
+		if (GetState() != DECAY)
 			SetState(DECAY);
-		}
 	}
-    
+	else
+		mSpeed = -mSpeed; //If object is same size, or smaller than other object, reverse direction
 }
 
 void SphereObject::SpeedUpdate(double elapsed)
-{
-	if (mSpeed.x > 0.5f) { mSpeed.x = 0.5f; }
-	if (mSpeed.y > 0.5f) { mSpeed.y = 0.5f; }
-	if (mSpeed.z > 0.5f) { mSpeed.z = 0.5f; }
-	if (mSpeed.x < -0.5f) { mSpeed.x = -0.5f; }
-	if (mSpeed.y < -0.5f) { mSpeed.y = -0.5f; }
-	if (mSpeed.z < -0.5f) { mSpeed.z = -0.5f; }
+{   //Stops object going too fast in any direction! Comment / remove these lines if you want to remove speed limit
+	if (mSpeed.x > SPHERE_MAX_SPEED) { mSpeed.x = SPHERE_MAX_SPEED; }
+	if (mSpeed.y > SPHERE_MAX_SPEED) { mSpeed.y = SPHERE_MAX_SPEED; }
+	if (mSpeed.z > SPHERE_MAX_SPEED) { mSpeed.z = SPHERE_MAX_SPEED; }
+	if (mSpeed.x < -SPHERE_MAX_SPEED) { mSpeed.x = -SPHERE_MAX_SPEED; }
+	if (mSpeed.y < -SPHERE_MAX_SPEED) { mSpeed.y = -SPHERE_MAX_SPEED; }
+	if (mSpeed.z < -SPHERE_MAX_SPEED) { mSpeed.z = -SPHERE_MAX_SPEED; }
 
+	//Gradually slows down objects, unless already at minimum speed
 	if (CheckSlowDown()) {
-		if (mSpeed.x > 0.2f)
-			mSpeed.x -= 0.1f * (float) elapsed;
-		else if (mSpeed.x < 0.2f)
-			mSpeed.x += 0.1f * (float) elapsed;
+		if (mSpeed.x > SPHERE_MIN_SPEED)
+			mSpeed.x -= 0.1f * (float)elapsed;
+		else if (mSpeed.x < SPHERE_MIN_SPEED)
+			mSpeed.x += 0.1f * (float)elapsed;
 
-		if (mSpeed.y > 0.2f)
-			mSpeed.y -= 0.1f * (float) elapsed;
-		else if (mSpeed.y < 0.2f)
-			mSpeed.y += 0.1f * (float) elapsed;
+		if (mSpeed.y > SPHERE_MIN_SPEED)
+			mSpeed.y -= 0.1f * (float)elapsed;
+		else if (mSpeed.y < SPHERE_MIN_SPEED)
+			mSpeed.y += 0.1f * (float)elapsed;
 
-		if (mSpeed.z > 0.2f)
-			mSpeed.z -= 0.1f * (float) elapsed;
-		else if (mSpeed.z < 0.2f)
-			mSpeed.z += 0.1f * (float) elapsed;
+		if (mSpeed.z > SPHERE_MIN_SPEED)
+			mSpeed.z -= 0.1f * (float)elapsed;
+		else if (mSpeed.z < SPHERE_MIN_SPEED)
+			mSpeed.z += 0.1f * (float)elapsed;
 
 	}
 }
 
-void SphereObject::RandMovement()
+void SphereObject::RandMovement() //Creates random movement for object if object is moving too slowly
 {
-	if (mSpeed.x <= 0.01f && mSpeed.y <= 0.01f && mSpeed.z <= 0.01f )
+	if (mSpeed.x <= 0.01f && mSpeed.y <= 0.01f && mSpeed.z <= 0.01f)
 	{
 		mSpeed.x += (rand() % 20 - 10) / 10.0f;
 		mSpeed.y += (rand() % 20 - 10) / 10.0f;
