@@ -6,57 +6,60 @@
 #include "SphereCam.h"
 
 
-
+//Application is created as a class - Inherits from Cinder's AppNative application class and contains public functions / variables
 class SphereAgainApp : public AppNative {
 public:
 	vector <gl::Texture *> textures; //Vector array of texture buffers
 
 	vector <SphereObject *> objects; //Vector of all objects.
-	vector <SphereObject *>::iterator itr;
-	vector <SphereObject *>::iterator itr2;
+	vector <SphereObject *>::iterator itr; //Iterator for vector of objects
 
-	gl::GlslProg		mShader;
+	gl::GlslProg		mShader; //Shader file to load in
 
-	gl::Texture		*mTexture;
+	gl::Texture		*mTexture; //Texture file(s) to load in
     
     //! help text
     gl::TextureFontRef	mTextureFont;
 
-    Font				mFont;
+    Font				mFont; //Font file to load in
 
-	CameraPersp cam;
+	CameraPersp cam; //Camera (Cinder) to use
 
-	SphereCam	mSphereCam;
+	SphereCam	mSphereCam; //Overlay for camera (Controls, etc)
 
-	Vec2i		mMousePos;
+	Vec2i		mMousePos; //X and Y position vector for mouse(pointer) on screen
 
-	double mTime;
+	double mTime; //Time variable - Used in delta calculations, framerate etc
     
-    params::InterfaceGlRef	mParams; //Testing parameter interface
+    params::InterfaceGlRef	mParams; //Creates parameter interface (Cinder library)
     
-    ProgramSettings program;
+    ProgramSettings program; //Loading in settings structure created in globals.h
     
-    double framerate;
+    double framerate; //Framerate variable - Used to display framerate-based caluclations
 
+	//Base functions
 	void setup();
 	void prepareSettings(Settings *settings);
 	void loadResources();
 	void update();
 	void draw();
 
+	//Mouse usage
 	void mouseMove(MouseEvent event);
 	void mouseDown(MouseEvent event);
 	void mouseDrag(MouseEvent event);
-	void mouseWheel(MouseEvent event);
+	//void mouseWheel(MouseEvent event);
 
+	//Keyboard usage
 	void keyDown(KeyEvent event);
 
-	bool performPicking(Vec3f *pickedPoint, Vec3f *pickedNormal, SphereObject *Object);
-
-	bool CheckCollisions(MainObject *obj1, MainObject *obj2);
+	//Collisions function - Unused (commented) - See MainObject for used collisions
+	//bool CheckCollisions(MainObject *obj1, MainObject *obj2);
     
+	//Data render function - Draws 
     void renderDataToTexture();
     
+	//Toggle functions - Used for interface buttons
     void ToggleSpheres() {
         if(program.drawsphere)
             program.drawsphere = false;
@@ -67,52 +70,75 @@ public:
             program.renderdata = false;
         else program.renderdata = true;
     }
+
+	void ToggleCollisions() {
+		if (program.collision)
+			program.collision = false;
+		else program.collision = true;
+	}
+
+	void TogglePause() {
+		if (program.pause)
+			program.pause = false;
+		else program.pause = true;
+	}
+
     void ForceSpawn()
     {
-        for(int i = 0; i < program.SpawnRate; i++) {
-            SphereObject *sphere = new SphereObject((rand() % BORDER - (BORDER / 2)) / 10.0f, (rand() % BORDER - (BORDER / 2)) / 10.0f, (rand() % BORDER - (BORDER / 2)) / 10.0f);
+        for(int i = 0; i < program.SpawnRate; i++) { //Will create an amount of objects based on current spawn rate
+            SphereObject *sphere = new SphereObject(program);
             objects.push_back(sphere);
         }
     }
     
+	//Creates interface parameters
     void setupParameter();
     
     void fullreset();
-    
+
+    //Moves to nearest object of supplied state (e.g. GoToNearest(CREATION_FAST) )
     void GoToNearest(int state);
     
+	//Pre-made function for interface buttons
     void GoToNearestSpawn() {GoToNearest(CREATION_OSCILLATION);}
     void GoToNearestDecay() {GoToNearest(DECAY);}
 };
 
+
+//All main functions for application
+
+//Set up application
 void SphereAgainApp::setup()
 {
-	loadResources();
+	loadResources(); //Load in files (textures / shaders)
     
-    mFont = Font( "PTMono-Bold", 36 );
-
-    mTextureFont = gl::TextureFont::create( mFont );
+    mFont = Font( "PTMono-Bold", 36 ); //Font used - Can replace with any font / size
+    mTextureFont = gl::TextureFont::create( mFont ); //Creates textured font from selected font
     
-    setupParameter();
+    setupParameter(); //Initially sets up interface
     
-	cam.lookAt(Vec3f(3.0f, 3.0f, 3.0f), Vec3f::zero());
-	cam.setPerspective(60.0f, getWindowAspectRatio(), 1.0f, 1000.0f);
+	//Setting up camera position, parameters and setting aspect ratio to window size
+	cam.lookAt(INIT_CAMERA_POS, Vec3f::zero());
+	cam.setPerspective(45.0f, getWindowAspectRatio(), 1.0f, 2500.0f);
 	mSphereCam.setCurrentCam(cam);
     cam.setAspectRatio( getWindowAspectRatio() );
     
+	//Automatically creates starting number of objects - If any set in globals.h
     for( int i = 1; i < INITOBJECTS; i++) {
-        SphereObject *sphere = new SphereObject((rand() % BORDER - (BORDER / 2)) / 10.0f, (rand() % BORDER - (BORDER / 2)) / 10.0f, (rand() % BORDER - (BORDER / 2)) / 10.0f);
+        SphereObject *sphere = new SphereObject(program);
         objects.push_back(sphere);
     }
+
+	//Initially draws info to texture (data panel)
     renderDataToTexture();
 }
 
 void SphereAgainApp::loadResources() //Load all files here
 {
+	//Load the shader
 	mShader = gl::GlslProg(loadResource(RES_SHADER_VERT), loadResource(RES_SHADER_FRAG));
 
-	// load the texture
-	//  (note: enable mip-mapping by default)
+	//Load the textures
 	gl::Texture::Format format;
 	format.enableMipmapping(true);
 
@@ -135,40 +161,59 @@ void SphereAgainApp::update()
 	double elapsed = getElapsedSeconds() - mTime;
 	mTime = getElapsedSeconds();
 
+	//Calculates framerate
 	framerate = 1 / elapsed;
 
 	program.camerapos = mSphereCam.GetPosition();
 
-	//Randomly create objects
-	//if (objects.size() < 2000) {
-	if (floor(getAverageFps()) > program.MINFPS) {
-		//if (rand() % 5 == 1){
-        for(int i = 0; i < program.SpawnRate; i++) {
-			SphereObject *sphere = new SphereObject((rand() % BORDER - (BORDER / 2)) / 10.0f, (rand() % BORDER - (BORDER / 2)) / 10.0f, (rand() % BORDER - (BORDER / 2)) / 10.0f);
-			objects.push_back(sphere);
-        }
-		//}
-	}
-	//}
+	elapsed *= program.ProgramSpeed; //Speeds altered by user editing program speed
 
-    elapsed *= program.ProgramSpeed; //Speeds altered by user editing program speed
-    
 	//Updates all objects in list
 	for (unsigned int i = 0; i < objects.size(); i++) {
 		objects.at(i)->Update(elapsed, &objects, program.camerapos, program);
 	}
 
-	//Deletes all decayed objects
-	for (itr = objects.begin(); itr != objects.end();) {
-		if ((*itr)->GetState() == DEAD) {
-			(*itr)->Destroy();
-			itr = objects.erase(itr);
+	if (!program.pause) { //If program is paused, skip all of this!
+
+		//Spawns new objects within the field, if spawn rate is above zero and current FPS is more than minimum FPS set to spawn
+		if (floor(getAverageFps()) > program.MINFPS) {
+			for (int i = 0; i < program.SpawnRate; i++) {
+				SphereObject *sphere = new SphereObject(program);
+				objects.push_back(sphere);
+			}
+
 		}
-		else itr++;
+
+		//Collision detection - WILL SLOW DOWN APPLICATION. Turn off for increased performance
+		if (program.collision) { //Will only perform if collision is turned on
+			for (unsigned int i = 0; i < objects.size(); i++)
+			{
+				for (unsigned int ii = 0; ii < objects.size(); ii++)
+				{
+					if (!objects.at(i)->GetCollidable()) continue; //If either object is not collidable, skip this
+					if (!objects.at(ii)->GetCollidable()) continue;
+					if (objects.at(i)->CheckCollisions(objects.at(ii))) {
+						objects.at(i)->Collided(objects.at(ii)); //Calls both object's collision code
+						objects.at(ii)->Collided(objects.at(i));
+					}
+				}
+			}
+		}
+
+		//Deletes all decayed objects
+		for (itr = objects.begin(); itr != objects.end();) {
+			if ((*itr)->GetState() == DEAD) {
+				//(*itr)->Destroy(); //Unused - See MainObject
+				itr = objects.erase(itr); //Delete from memory + vector
+			}
+			else itr++; //Check next object
+		}
+
 	}
 	//Orders objects in list based on alpha values - This stops transparencies from bleeding onto solid objects
 	sort(objects.begin(), objects.end(), [](MainObject* a, MainObject* b){ return a->GetAlpha() > b->GetAlpha(); });
     
+	//Updates program's display values (Number of objects - framerate)
     program.numberofobjects = objects.size();
     program.framerate = floor(getAverageFps());
 }
@@ -178,9 +223,9 @@ void SphereAgainApp::draw()
     gl::setMatricesWindow( getWindowSize() );
     
 	if (!mShader)
-		return;
+		return; //Does not draw if shader not loaded!
 
-	// clear out the window with black
+	// Keep background black
 	gl::clear(Color(0, 0, 0));
 
 	// set up the camera 
@@ -194,16 +239,15 @@ void SphereAgainApp::draw()
 	// enable the correct blend mode and set the color (filter)
 	gl::enableAlphaBlending();
 
+	//Binding shader for all rendering
 	mShader.bind();
 	
+	//Renders all objects in scene (Using their own draw code) - This is expensive, could be improved via instancing
 	for (itr = objects.begin(); itr != objects.end(); ++itr) {
 		(*itr)->Render(&textures, &mShader, program);
 	}
-	/*Vec3f pickedPoint, pickedNormal;
-		for (itr = objects.begin(); itr != objects.end(); ++itr) {
-			if (performPicking(&pickedPoint, &pickedNormal, (*itr)))
-				(*itr)->Select();
-		}*/
+	
+	//Ubnbinding shader after all rendering
 	mShader.unbind();
 	
 	
@@ -227,26 +271,8 @@ void SphereAgainApp::mouseMove(MouseEvent event)
 
 void SphereAgainApp::mouseDown(MouseEvent event)
 {
-	//Vec3f pickedPoint, pickedNormal;
-	//if (event.isLeftDown()) {
-	//	for (itr = objects.begin(); itr != objects.end(); ++itr) {
-	//		if (performPicking(&pickedPoint, &pickedNormal, (*itr))) {
-	//			if ((*itr)->GetState() == NORMAL)
-	//				(*itr)->Select();
-	//		}
-	//	}
-	//}
-	/*	select.clear();
-		SelectionChecker *selecter = new SelectionChecker(mMousePos, cam);
-		select.push_back(selecter);
-	}
-	else
-	// let the camera handle the interaction*/
-	//else
+	//Gives information to the SphereCam class for camera movement
 	mSphereCam.mouseDown(event.getPos());
-
-	
-	
 }
 
 void SphereAgainApp::mouseDrag(MouseEvent event)
@@ -258,62 +284,59 @@ void SphereAgainApp::mouseDrag(MouseEvent event)
 	mSphereCam.mouseDrag(event.getPos(), event.isRightDown(), event.isControlDown(), event.isLeftDown(), event.isShiftDown());
 }
 
-void SphereAgainApp::mouseWheel(MouseEvent event)
+/*void SphereAgainApp::mouseWheel(MouseEvent event)
 {
 	mSphereCam.wheelZoom(event.getWheelIncrement());
-}
+}*/
 
 void SphereAgainApp::prepareSettings(Settings *settings)
 {
-	//settings->setWindowSize(1680, 1050);
-	settings->setWindowSize(1920, 1080);
+    DisplayRef display = Display::getMainDisplay();
+    Vec2i displaySize = display->getSize();
+	settings->setWindowSize(displaySize);
 	settings->setFullScreen(true);
 	settings->setResizable(true);
 	settings->setFrameRate(60.0f);
 }
 
+//Keyboard input
 void SphereAgainApp::keyDown(KeyEvent event)
 {
-	if (event.getChar() == 'f')
+	if (event.getChar() == 'f') //Toggle fullscreen
 		setFullScreen(!isFullScreen());
 
 	if (event.getCode() == 27) //ESC key
 		quit();
 
 	if (event.getChar() == 'r') { //Add new object
-        SphereObject *sphere = new SphereObject((rand() % BORDER - (BORDER / 2)) / 10.0f, (rand() % BORDER - (BORDER / 2)) / 10.0f, (rand() % BORDER - (BORDER / 2)) / 10.0f);
-        objects.push_back(sphere);
+        ForceSpawn();
 	}
 
 	if (event.getChar() == 'c') { //Clear all objects
-		for (int killobj = 0; killobj < objects.size(); killobj++) {
-			objects.at(killobj)->Destroy();
-		}
-		objects.clear();
+		//for (int killobj = 0; killobj < objects.size(); killobj++) {
+		//	objects.at(killobj)->Destroy(); //Unused - See MainObject
+		//}
+		objects.clear(); // Clears vector + memory
 	}
 
-	if (event.getChar() == 'w')
+	if (event.getChar() == 'w') //Turns data display on/off
 	{
-		if(program.renderdata)
-            program.renderdata = false;
-        else program.renderdata = true;
+		ToggleData();
 	}
 
-	if (event.getChar() == 'y')
+	if (event.getChar() == 'y') //Move to nearest decaying object - Will need to zoom out
 	{
         GoToNearest(DECAY);
 	}
     
-    if (event.getChar() == 't')
+    if (event.getChar() == 't') //Move to nearest spawning object - Will need to to zoom out
     {
         GoToNearest(CREATION_OSCILLATION);
     }
 
-	if (event.getChar() == 'a')
+	if (event.getChar() == 'a') //Toggles between drawing spheres and circles - Circles do not billboard!
 	{
-        if(program.drawsphere)
-            program.drawsphere = false;
-        else program.drawsphere = true;
+		ToggleSpheres();
 	}
 
 	if (event.getChar() == 'd')
@@ -321,52 +344,47 @@ void SphereAgainApp::keyDown(KeyEvent event)
 
 	}
 
-	if (event.getChar() == 'q')
+	if (event.getChar() == 'p')
 	{
-		for (itr = objects.begin(); itr != objects.end(); ++itr) {
-			if ((*itr)->GetSelected())
-				(*itr)->AddSpeedZ(-1.0f);
-		}
+		TogglePause();
 	}
 
-	if (event.getChar() == 'e')
+	if (event.getChar() == 'q')
+	{
+        
+	}
+
+	if (event.getChar() == 'e') //Resets all - To settings as seen in globals.h
 	{
         fullreset();
 	}
 
 	if (event.getChar() == 'x')
 	{
-		for (itr = objects.begin(); itr != objects.end(); ++itr) {
-			if ((*itr)->GetSelected())
-				(*itr)->SpeedReset();
-		}
+        
 	}
 
 	if (event.getChar() == 'z')
 	{
-		for (itr = objects.begin(); itr != objects.end(); ++itr) {
-			if ((*itr)->GetSelected())
-				(*itr)->Deselect();
-		}
+        
 	}
 
 	if (event.getChar() == 'h')
 	{
-		for (itr = objects.begin(); itr != objects.end(); ++itr) {
-			if ((*itr)->GetSelected())
-				(*itr)->Deselect();
-		}
+        
 	}
 
 
 	if (event.getCode() == 276) //Left arrow key
 	{
+        //Decreases spawn rate
         if(program.SpawnRate > 0)
             program.SpawnRate -= 1;
         else program.SpawnRate = 0;
 	}
 	else if (event.getCode() == 275) //Right arrow key
 	{
+        //Increases spawn rate
         if(program.SpawnRate < MAXSPAWNRATE)
             program.SpawnRate += 1;
         else program.SpawnRate = MAXSPAWNRATE;
@@ -375,27 +393,27 @@ void SphereAgainApp::keyDown(KeyEvent event)
 
 	if (event.getCode() == 273) //Up arrow key
 	{
-		
+        //Speeds program up!
+        if(program.ProgramSpeed < MAXPROGRAMSPEED)
+        program.ProgramSpeed += 0.1f;
+        else program.ProgramSpeed = MAXPROGRAMSPEED;
 	}
 	else if (event.getCode() == 274) //Down arrow key
 	{
-		
+        //Slows program down!
+        if(program.ProgramSpeed > 0.1f)
+        program.ProgramSpeed -= 0.1f;
+        else program.ProgramSpeed = 0.1f;
 	}
 
 	if (event.getCode() == 281) //Page up key
 	{
-        //Slows program down!
-        if(program.ProgramSpeed > 0.1f)
-            program.ProgramSpeed -= 0.1f;
-        else program.ProgramSpeed = 0.1f;
+       
 		
 	}
 	else if (event.getCode() == 280) //Page down key
 	{
-        //Speeds program up!
-        if(program.ProgramSpeed < MAXPROGRAMSPEED)
-            program.ProgramSpeed += 0.1f;
-        else program.ProgramSpeed = MAXPROGRAMSPEED;
+        
 	}
     
     if(event.getCode() == 127) //Delete key
@@ -403,92 +421,11 @@ void SphereAgainApp::keyDown(KeyEvent event)
         //Resets program speed
         program.ProgramSpeed = 1.0f;
     }
+
+	//For all other keycodes see Cinder documentation (KeyEvent)
 }
 
-bool SphereAgainApp::performPicking(Vec3f *pickedPoint, Vec3f *pickedNormal, SphereObject *object)
-{
-	// get our camera 
-	CameraPersp cam = mSphereCam.getCamera();
-
-	// generate a ray from the camera into our world
-	float u = mMousePos.x / (float)getWindowWidth();
-	float v = mMousePos.y / (float)getWindowHeight();
-	// because OpenGL and Cinder use a coordinate system
-	// where (0, 0) is in the LOWERleft corner, we have to flip the v-coordinate
-	Ray ray = cam.generateRay(u, 1.0f - v, cam.getAspectRatio());
-
-	gl::color(Color(1, 1, 0));
-	gl::drawVector(ray.getOrigin(), ray.getOrigin() + ray.getDirection());
-
-//	// draw the object space bounding box in yellow
-//	gl::color(Color(1, 1, 0));
-//	gl::drawStrokedCube(mObjectBounds);
-
-	// the coordinates of the bounding box are in object space, not world space,
-	// so if the model was translated, rotated or scaled, the bounding box would not
-	// reflect that. 
-	//
-	// One solution would be to pass the transformation to the calcBoundingBox() function: 
-	AxisAlignedBox3f worldBoundsExact = object->calcBoundingBox(object->GetTrans()); // slow
-
-	//if (ray.calcPosition(object->GetZ())
-
-	// draw this transformed box in orange
-	//gl::color(Color(1, 0.5, 0));
-	//gl::drawStrokedCube(worldBoundsExact);
-
-	// But if you already have an object space bounding box, it's much faster to
-	// approximate the world space bounding box like this:
-//	AxisAlignedBox3f worldBoundsApprox = mObjectBounds.transformed(mTransform);	// fast
-
-	// draw this transformed box in cyan
-//	gl::color(Color(0, 1, 1));
-//	gl::drawStrokedCube(worldBoundsApprox);
-
-	// fast detection first - test against the bounding box itself
-	if (!worldBoundsExact.intersects(ray))
-		return true;
-	else return false;
-
-	/*// set initial distance to something far, far away
-	float result = 1.0e6f;
-
-	// traverse triangle list and find the picked triangle
-	size_t polycount = mMesh.getNumTriangles();
-	float distance = 0.0f;
-	for (size_t i = 0; i<polycount; ++i)
-	{
-		Vec3f v0, v1, v2;
-		// get a single triangle from the mesh
-		mMesh.getTriangleVertices(i, &v0, &v1, &v2);
-
-		// transform triangle to world space
-		v0 = mTransform.transformPointAffine(v0);
-		v1 = mTransform.transformPointAffine(v1);
-		v2 = mTransform.transformPointAffine(v2);
-
-		// test to see if the ray intersects with this triangle
-		if (ray.calcTriangleIntersection(v0, v1, v2, &distance)) {
-			// set our result to this if its closer than any intersection we've had so far
-			if (distance < result) {
-				result = distance;
-				// assuming this is the closest triangle, we'll set our normal
-				// while we've got all the points handy
-				*pickedNormal = (v1 - v0).cross(v2 - v0).normalized();
-			}
-		}
-	}
-
-	// did we have a hit?
-	if (distance > 0) {
-		*pickedPoint = ray.calcPosition(result);
-		return true;
-	}
-	else 
-		return false; */
-}
-
-bool SphereAgainApp::CheckCollisions(MainObject *obj1, MainObject *obj2)
+/*bool SphereAgainApp::CheckCollisions(MainObject *obj1, MainObject *obj2)
 {
 	Vec3f distance = obj1->GetPos() - obj2->GetPos();
 
@@ -503,7 +440,7 @@ bool SphereAgainApp::CheckCollisions(MainObject *obj1, MainObject *obj2)
 	}
 
 	return false;
-}
+}*/
 
 void SphereAgainApp::renderDataToTexture()
 {
@@ -517,32 +454,35 @@ void SphereAgainApp::renderDataToTexture()
 
 void SphereAgainApp::setupParameter()
 {
-    // Create the interface and give it a name.
+    // Create the interface and give it a name
     mParams = params::InterfaceGl::create( getWindow(), "Sphere Prototype", toPixels( Vec2i( 300, 750 ) ) );
     
-    mParams->addParam("Particles", &program.numberofobjects).step(0);
+    mParams->addParam("Particles", &program.numberofobjects).step(0); //Shows number of particles on screen (Non-changeable)
     
-    mParams->addParam("FPS", &program.framerate).step(0);
+    mParams->addParam("FPS", &program.framerate).step(0); //Shows FPS (Non changeable)
     
-    mParams->addText("Position:");
+    mParams->addText("Position:"); //Displays current X, Y and Z position of camera
     mParams->addParam("X:", &program.camerapos.x).step(0);
     mParams->addParam("Y:", &program.camerapos.y).step(0);
     mParams->addParam("Z:", &program.camerapos.z).step(0);
     
-    mParams->addSeparator();
+    mParams->addSeparator(); //Creates a seperating bar on the interface
     
     mParams->addText("Peformance options:");
     
-    mParams->addParam("Draw Distance", &program.MAXRENDERDISTANCE).min(10).max(2500).step(1);
+    mParams->addParam("Draw Distance", &program.MAXRENDERDISTANCE).min(10).max(2500).step(1); //Objects after set distance will NOT render - Ideal for lesser-powered machines
     
-    mParams->addParam("Minimum FPS spawn", &program.MINFPS).min(1).max(60).step(1);
-    
-    mParams->addButton("Reset all", std::bind(&SphereAgainApp::fullreset, this));
+    mParams->addParam("Minimum FPS spawn", &program.MINFPS).min(1).max(60).step(1); //Objects will not spawn if FPS is below this amount
+
+	mParams->addButton("Toggle collisisons", std::bind(&SphereAgainApp::ToggleCollisions, this)); //Turns collisions on/off
+
+    mParams->addButton("Reset all", std::bind(&SphereAgainApp::fullreset, this)); //Resets all parameters to default
     
     mParams->addSeparator();
     mParams->addText("Application options:");
-    mParams->addParam("Program Speed", &program.ProgramSpeed).min( 0.1f ).max( MAXPROGRAMSPEED ).step( 0.1f );
+    mParams->addParam("Program Speed", &program.ProgramSpeed).min( 0.0f ).max( MAXPROGRAMSPEED ).step( 0.1f );
     mParams->addParam("Spawn Rate", &program.SpawnRate).min(0).max(MAXSPAWNRATE).step(1);
+	mParams->addParam("% chance of collision", &program.PERCENTCOLLISION).min(0).max(MAX_COLLISION_PERCENT).step(1);
     mParams->addButton("Display Spheres/circles", std::bind( &SphereAgainApp::ToggleSpheres, this));
     mParams->addButton("Display data", std::bind(&SphereAgainApp::ToggleData, this));
     
@@ -551,10 +491,11 @@ void SphereAgainApp::setupParameter()
     mParams->addButton("Spawning particle", std::bind(&SphereAgainApp::GoToNearestSpawn, this));
     mParams->addButton("Decaying particle", std::bind(&SphereAgainApp::GoToNearestDecay, this));
     
+	//Display keyboard shortcuts/controls in text. One command per line
     mParams->addSeparator();
     mParams->addText("Keyboard shortcuts:");
-    mParams->addText(" ");
-    mParams->addText("Inc/Dec Speed: PgUp / PgDown");
+    mParams->addText(" "); //Makes a space!
+    mParams->addText("Inc/Dec Speed: Up / Down");
     mParams->addText("Reset Speed: Del");
     mParams->addText("Clear all particles: C");
     mParams->addText("Inc/Dec Spawn Rate: Left/Right");
@@ -565,7 +506,7 @@ void SphereAgainApp::setupParameter()
     mParams->addText("Go to nearest decay: Y");
     mParams->addText("  ");
     mParams->addText("Full Reset: E");
-    mParams->addText("   ");
+    mParams->addText("Pause: P");
     mParams->addText("Toggle data display: W");
     mParams->addText("Toggle fullscreen: F");
     mParams->addText("Quit application: Esc");
@@ -578,55 +519,51 @@ void SphereAgainApp::setupParameter()
     mParams->addText("CTRL+click+drag to rotate camera");
 }
 
-void SphereAgainApp::fullreset()
+void SphereAgainApp::fullreset() //Resets all parameters to those set in globals.h
 {
-    program.MINFPS = 25;
-    program.MAXRENDERDISTANCE = 500;
-    program.drawsphere = true;
-    program.ProgramSpeed = 1.0f;
-    program.renderdata = false;
-    for (int killobj = 0; killobj < objects.size(); killobj++) {
-        objects.at(killobj)->Destroy();
-    }
-    objects.clear();
-    for( int i = 1; i < INITOBJECTS; i++) {
-        SphereObject *sphere = new SphereObject((rand() % BORDER - (BORDER / 2)) / 10.0f, (rand() % BORDER - (BORDER / 2)) / 10.0f, (rand() % BORDER - (BORDER / 2)) / 10.0f);
-        objects.push_back(sphere);
-    }
-    mSphereCam.setPos(Vec3f(3.0f,3.0f,3.0f));
+    program.MINFPS = INIT_MIN_FPS;
+    program.MAXRENDERDISTANCE = INIT_MAX_RENDER_DISTANCE;
+    program.drawsphere = INIT_DRAW_SPHERE;
+    program.ProgramSpeed = INIT_PROG_SPEED;
+    program.renderdata = INIT_RENDER_DATA;
+    program.SpawnRate = INIT_SPAWN_RATE;
+    program.PERCENTCOLLISION = INIT_COLLISION_PERCENT;
+	program.collision = INIT_COLLISION_ENABLED;
+    //for (int killobj = 0; killobj < objects.size(); killobj++) { //Clears all current objects - Unused - See Mainobject
+    //    objects.at(killobj)->Destroy();
+    //}
+    objects.clear(); //Clears vector and memory
+    mSphereCam.setPos(INIT_CAMERA_POS); //Returns camera
 }
 
 void SphereAgainApp::GoToNearest(int state)
 {
-    if(!state)
+    if(!state) //If no state is given, check for DECAY state
         state = DECAY;
     
-    Vec3f distance;
-    Vec3f shortestdistance = Vec3f(0.0f, 0.0f, 0.0f);
+    Vec3f distance; //Current object's distance
+    Vec3f shortestdistance = Vec3f(0.0f, 0.0f, 0.0f); //Shortest distance of current object
     
     for(int i = 0; i < objects.size(); i++) {
         if(objects.at(i)->GetState() == state) //Checks if object is in desired state
         {
-            distance = program.camerapos - objects.at(i)->GetPos();
+            distance = program.camerapos - objects.at(i)->GetPos(); //Checks distance from camera
             if(shortestdistance == Vec3f(0.0f, 0.0f, 0.0f))
             {
-                shortestdistance = objects.at(i)->GetPos();
+                shortestdistance = objects.at(i)->GetPos(); //If shortest distance is nill, make current object closest
             }
-            else if(distance.length() < shortestdistance.length())
+            else if(distance.length() < shortestdistance.length()) 
             {
-                shortestdistance = objects.at(i)->GetPos();
+                shortestdistance = objects.at(i)->GetPos(); //If current object is closest, replace previous object
             }
         }
     }
-    if(shortestdistance != Vec3f(0.0f, 0.0f, 0.0f))
+    if(shortestdistance != Vec3f(0.0f, 0.0f, 0.0f)) //Do not move camera to 0 if no objects of state were found!
     {
-        //NewPos.getCamera();
-        //NewPos.setCenterOfInterest(0.0f);
-        
-        //cam = NewPos;
-        mSphereCam.setPos(shortestdistance);
+        mSphereCam.setPos(shortestdistance); //Moves camera to the object that was found closest
     }
     
 }
 
+//Open the application - Uses program class and OpenGL
 CINDER_APP_NATIVE(SphereAgainApp, RendererGl)
