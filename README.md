@@ -30,6 +30,8 @@ Rendering is done in OpenGL and uses GLSL version 110 shaders.
 
 The project will work on Windows and Mac, source code will be 100% portable between each platform (Using the correct Cinder libraries / projects are set up!)
 
+If you have any questions or comments, or need help with working on the code, feel free to contact me on damon_wareham@yahoo.com
+
 -- 2 -- Setup for running --------------------------------------------------------------------------------------
 
 i ) Windows: ----------------
@@ -132,7 +134,7 @@ iii ) Alternate - Pre-built - (REQUIRES VISUAL STUDIO 2013/2015 FOR WINDOWS, XCO
 
 -Program is most intensive on GPU (Graphics card) through initial profiling - Using Cinder prototypes means individual draw calls. Faster the graphics card the better!
 
--All source code, for more detail please refer to!
+-All source code is commented, for more detail please refer to!
 
 
 -- 6 -- Special thanks ----------------------------------------------------------------------------------------------
