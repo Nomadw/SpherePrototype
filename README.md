@@ -26,6 +26,7 @@ iii) Alternate - Pre-built
 -- 1 -- About --------------------------------------------------------------------------------------------------
 
 This project is built to build scientific particle simulations with, created in C++ and making use of Cinder 0.8.6 for graphics, geometry and application building.
+This was created for the Entropy project, although anyone is free to use given proper credit.
 Rendering is done in OpenGL and uses GLSL version 110 shaders.
 
 The project will work on Windows and Mac, source code will be 100% portable between each platform (Using the correct Cinder libraries / projects are set up!)
