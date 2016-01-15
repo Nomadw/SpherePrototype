@@ -137,6 +137,7 @@ iii ) Alternate - Pre-built - (REQUIRES VISUAL STUDIO 2013/2015 FOR WINDOWS, XCO
 
 -All source code is commented, for more detail please refer to!
 
+-This is intended to work with 0.8.6 only. Attempts were made to convert to Cinder's latest version (0.9.0 as of writing) but issues found that went outside of timeframe. Get working fully with 0.9.0 possible project?
 
 -- 6 -- Special thanks ----------------------------------------------------------------------------------------------
 
